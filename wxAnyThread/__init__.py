@@ -28,6 +28,7 @@ to methods to make them safe to call from any thread, like so:
 The GetSomeData method can now be directly invoked from any thread.
 The calling thread will block while the main GUI thread shows the dialog,
 and will then receive a return value or exception as appropriate.
+
 """
 
 __ver_major__ = 0
@@ -51,35 +52,38 @@ class MethodInvocationEvent(wx.PyEvent):
       self.func = func
       self.args = args
       self.kwds = kwds
-      # The calling thread will block on this semaphore, which the GUI
-      # thread will release when the results are available.
-      # TODO: how expensive are these to create?  Should we re-use them?
-      self.blocker = threading.Semaphore(0)
+      self.event = threading.Event()
 
     def invoke(self):
+        """Invoke the method, blocking until the main thread handles it."""
         wx.PostEvent(self.args[0],self)
-        self.blocker.acquire()
+        self.event.wait()
         try:
-          return self.result
+            return self.result
         except AttributeError:
-          raise self.exception
+            raise self.exception
 
     def process(self):
+        """Execute the method and signal that it is ready."""
         try:
-          self.result = self.func(*self.args,**self.kwds)
+            self.result = self.func(*self.args,**self.kwds)
         except Exception, e:
-          self.exception = e
-        self.blocker.release()
+            self.exception = e
+        self.event.set()
 
 def handler(evt):
+    """Simple event handler to register for invocation events."""
     evt.process()
 
 def anythread(func):
     """Method decorator allowing call from any thread.
+
     The method is replaced by one that posts a MethodInvocationEvent to the
     object, then blocks waiting for it to be completed.  The target object
-    if automatically connected to the _EVT_INVOKE_METHOD event if it wasn't
+    is automatically connected to the _EVT_INVOKE_METHOD event if it wasn't
     alread connected.
+
+    When invoked from the main thread, the function is executed immediately.
     """
     def invoker(*args,**kwds):
       if wx.Thread_IsMain():
@@ -94,5 +98,4 @@ def anythread(func):
     invoker.__name__ = func.__name__
     invoker.__doc__ = func.__doc__
     return invoker
-
 
