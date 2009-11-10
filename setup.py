@@ -1,14 +1,5 @@
-#
-#  This is the wxAnyThread setuptools script.
-#  Originally written by Ryan Kelly, 2007.
-#
-#  This script is placed in the public domain.
-#
 
-import ez_setup
-ez_setup.use_setuptools()
-
-from setuptools import setup, find_packages
+from distutils.core import setup
 
 import wxAnyThread
 
@@ -20,7 +11,7 @@ URL = "http://pypi.python.org/pypi/wxAnyThread/"
 LICENSE = "Public Domain"
 KEYWORDS = "wxPython threading"
 
-PACKAGES = find_packages()
+PACKAGES = ["wxAnyThread"]
 
 setup(name=NAME,
       version=wxAnyThread.__version__,
