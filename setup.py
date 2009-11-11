@@ -8,7 +8,7 @@ DESCRIPTION = "Allow wxPython object methods to be called from any thread."
 AUTHOR = "Ryan Kelly"
 AUTHOR_EMAIL = "ryan@rfk.id.au"
 URL = "http://pypi.python.org/pypi/wxAnyThread/"
-LICENSE = "Public Domain"
+LICENSE = "MIT"
 KEYWORDS = "wxPython threading"
 
 PACKAGES = ["wxAnyThread"]
