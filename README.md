@@ -1,5 +1,14 @@
 
-  wxAnyThread:  allow methods on wxPython objects to be called from any thread
+Status: Unmaintained
+====================
+
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
+I am [no longer actively maintaining this project](https://rfk.id.au/blog/entry/archiving-open-source-projects/).
+
+
+wxAnyThread:  allow methods on wxPython objects to be called from any thread
+============================================================================
 
 In wxPython, methods that alter the state of the GUI are only safe to call from
 the thread running the main event loop.  Other threads must typically post
