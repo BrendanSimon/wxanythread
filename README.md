@@ -1,11 +1,21 @@
 
-Status: Unmaintained
-====================
+Status: Revived !!
+==================
 
-[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+I have revived this repository from the original author, whom had archived the repository (thanks for the initial work Ryan!)
 
-I am [no longer actively maintaining this project](https://rfk.id.au/blog/entry/archiving-open-source-projects/).
+Ryan has kindly transferred the repository to me and is officially maintained at https://github.com/BrendanSimon/wxanythread
 
+There are other forks hanging around github, but from what I can decipher it seems there are no public commits/branches with any modifications.
+
+My intention is to bring it up to date and to hopefully have it accepted upstream by the wxPython team (hi Robin et al!), possibly as part of the `wx.lib` package.
+
+Initial goals
+* Add some simpler functions/decorators to use `wx.CallAfter()`, without blocking and waiting for results
+* Make it work with Python 3 and wxPython 4 (aka Phoenix)
+* Hopefully find a way to be able to use properties directly (e.g. `self.gauge.Value = 10` instead of `self.gauge.SetValue(10)`)
+
+**==== ORIGINAL wxAnyThread description below ====**
 
 wxAnyThread:  allow methods on wxPython objects to be called from any thread
 ============================================================================
