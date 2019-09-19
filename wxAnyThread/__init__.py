@@ -44,6 +44,22 @@ import threading
 
 _EVT_INVOKE_METHOD = wx.NewId()
 
+
+class EventWithData(object):
+    def __init__(self):
+        self._event = threading.Event()
+
+    def wait(self):
+        return self._event.wait()
+
+    def set(self):
+        return self._event.set()
+
+    def set_exc_info(self, exc_info):
+        self.exception = exc_info[1]
+        self.traceback = exc_info[2]
+
+
 class MethodInvocationEvent(wx.PyEvent):
     """Event fired to the GUI thread indicating a method invocation."""
 
@@ -53,25 +69,28 @@ class MethodInvocationEvent(wx.PyEvent):
         self.func = func
         self.args = args
         self.kwds = kwds
-        self.event = threading.Event()
+        self.event = EventWithData()
 
     def invoke(self):
         """Invoke the method, blocking until the main thread handles it."""
         wx.PostEvent(self.args[0],self)
         self.event.wait()
         try:
-            return self.result
-        except AttributeError:
-            tb = self.traceback
-            del self.traceback
-            raise type(self.exception), self.exception, tb
+            return self.event.result
+        except AttributeError as exc:
+            exception = self.event.exception
+            traceback = self.event.traceback
+            del self.event.traceback
+            raise type(exception), exception, traceback
 
     def process(self):
         """Execute the method and signal that it is ready."""
         try:
-            self.result = self.func(*self.args,**self.kwds)
+            result = self.func(*self.args,**self.kwds)
+            self.event.result = result
         except Exception, e:
-            _,self.exception,self.traceback = sys.exc_info()
+            self.event.set_exc_info(sys.exc_info())
+
         self.event.set()
 
 
@@ -80,7 +99,7 @@ def handler(evt):
     evt.process()
 
 
-def anythread(func):
+def anythread(func, *args,**kwds):
     """Method decorator allowing call from any thread.
 
     The method is replaced by one that posts a MethodInvocationEvent to the
@@ -91,7 +110,7 @@ def anythread(func):
     When invoked from the main thread, the function is executed immediately.
     """
     def invoker(*args,**kwds):
-        if wx.Thread_IsMain():
+        if wx.IsMainThread():
             return func(*args,**kwds)
         else:
             self = args[0]
