@@ -35,8 +35,8 @@ __ver_major__ = 0
 __ver_minor__ = 2
 __ver_patch__ = 2
 __ver_sub__ = ""
-__version__ = "%d.%d.%d%s" % (__ver_major__,__ver_minor__,
-                              __ver_patch__,__ver_sub__)
+__version__ = "%d.%d.%d%s" % (__ver_major__, __ver_minor__,
+                              __ver_patch__, __ver_sub__)
 
 import wx
 import sys
@@ -44,34 +44,55 @@ import threading
 
 _EVT_INVOKE_METHOD = wx.NewId()
 
+
+class EventWithData(object):
+    def __init__(self):
+        self._event = threading.Event()
+        self.exception = None
+        self.traceback = None
+
+    def wait(self):
+        return self._event.wait()
+
+    def set(self):
+        return self._event.set()
+
+    def set_exc_info(self, exc_info):
+        self.exception = exc_info[1]
+        self.traceback = exc_info[2]
+
+
 class MethodInvocationEvent(wx.PyEvent):
     """Event fired to the GUI thread indicating a method invocation."""
 
-    def __init__(self,func,args,kwds):
+    def __init__(self, func, args, kwds):
         wx.PyEvent.__init__(self)
         self.SetEventType(_EVT_INVOKE_METHOD)
         self.func = func
         self.args = args
         self.kwds = kwds
-        self.event = threading.Event()
+        self.event = EventWithData()
 
     def invoke(self):
         """Invoke the method, blocking until the main thread handles it."""
-        wx.PostEvent(self.args[0],self)
+        wx.PostEvent(self.args[0], self)
         self.event.wait()
         try:
-            return self.result
+            return self.event.result
         except AttributeError:
-            tb = self.traceback
-            del self.traceback
-            raise type(self.exception), self.exception, tb
+            exception = self.event.exception
+            traceback = self.event.traceback
+            del self.event.traceback
+            raise type(exception)(exception).with_traceback(traceback)
 
     def process(self):
         """Execute the method and signal that it is ready."""
         try:
-            self.result = self.func(*self.args,**self.kwds)
-        except Exception, e:
-            _,self.exception,self.traceback = sys.exc_info()
+            result = self.func(*self.args, **self.kwds)
+            self.event.result = result
+        except:
+            self.event.set_exc_info(sys.exc_info())
+
         self.event.set()
 
 
@@ -80,7 +101,7 @@ def handler(evt):
     evt.process()
 
 
-def anythread(func):
+def anythread(func, *args, **kwds):
     """Method decorator allowing call from any thread.
 
     The method is replaced by one that posts a MethodInvocationEvent to the
@@ -90,17 +111,16 @@ def anythread(func):
 
     When invoked from the main thread, the function is executed immediately.
     """
-    def invoker(*args,**kwds):
-        if wx.Thread_IsMain():
+    def invoker(*args, **kwds):
+        if wx.IsMainThread():
             return func(*args,**kwds)
         else:
             self = args[0]
-            if not hasattr(self,"_AnyThread__connected"):
-                self.Connect(-1,-1,_EVT_INVOKE_METHOD,handler)
+            if not hasattr(self, "_AnyThread__connected"):
+                self.Connect(-1, -1, _EVT_INVOKE_METHOD, handler)
                 self._AnyThread__connected = True
-            evt = MethodInvocationEvent(func,args,kwds)
+            evt = MethodInvocationEvent(func, args, kwds)
             return evt.invoke()
     invoker.__name__ = func.__name__
     invoker.__doc__ = func.__doc__
     return invoker
-
