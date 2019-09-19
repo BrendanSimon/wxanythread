@@ -83,14 +83,14 @@ class MethodInvocationEvent(wx.PyEvent):
             exception = self.event.exception
             traceback = self.event.traceback
             del self.event.traceback
-            raise type(exception), exception, traceback
+            raise type(exception)(exception).with_traceback(traceback)
 
     def process(self):
         """Execute the method and signal that it is ready."""
         try:
             result = self.func(*self.args, **self.kwds)
             self.event.result = result
-        except Exception, e:
+        except:
             self.event.set_exc_info(sys.exc_info())
 
         self.event.set()
